@@ -68,7 +68,7 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=True)
-    genre = db.Column(db.String, nullable=True)
+    genre = db.relationship("Genre", back_populates="books")
     photos = db.Column(db.String, nullable=True)
     posted_by_user = db.relationship("User", back_populates="posted_books")
     bookmarked_by_users = db.relationship(
@@ -93,7 +93,7 @@ class Book(db.Model):
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "genre": self.genre,
+            "genre": self.genre.simple_serialize(),
             "photos": self.photos,
             "posted_by": self.posted_by_user.simple_serialize(),
         }
@@ -106,6 +106,24 @@ class Book(db.Model):
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "genre": self.genre,
             "photos": self.photos
+        }
+
+class Genre(db.Model):
+    __tablename__ = "genres"
+    #id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    genre = db.Column(db.String, nullable=False, unique=True)
+    books = db.relationship("Book", back_populates="genre", cascade="delete")
+
+    def serialize(self):
+        return {
+            "id": self.id, 
+            "genre": self.genre, 
+            "books": [book.simple_serialize() for book in self.books]
+        }
+        
+    def simple_serialize(self):
+        return {
+            "id": self.id, 
+            "genre": self.genre, 
         }
