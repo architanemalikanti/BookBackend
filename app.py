@@ -34,7 +34,6 @@ def get_all_users():
     users = User.query.all()
     return json.dumps({"all_users": [user.serialize() for user in users]}), 200
 
-
 # Route 4: Display the user's profile (picture, username, etc.)
 @app.route("/user/<int:user_id>/profile/", methods=["GET"])
 def get_user_profile(user_id):
