@@ -1,16 +1,23 @@
 import json
+import os
 from flask import Flask, request
 from db import db, User, Book, Genre
 
 app = Flask(__name__)
+db_filename = "/usr/app/book.db"
 
 # Database configuration
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///books.db"  # Update with your database URI
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///%s" % db_filename  # Update with your database URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ECHO"] = True
 
 # Initialize the database
 db.init_app(app)
 
+# Base route
+@app.route("/")
+def base_route():
+    return json.dumps("Welcome to the ultimate book sharing app!"), 200
 
 # Route 1: Return a list of books that a user owns
 @app.route("/user/<int:user_id>/books/")

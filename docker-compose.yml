@@ -1,0 +1,7 @@
+version: "3"
+services:    
+    demo:        
+        image: bxu475/book-backend  
+        env_file: .env         
+        ports:                
+            - "80:8000"
