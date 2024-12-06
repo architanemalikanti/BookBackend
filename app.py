@@ -1,6 +1,6 @@
 import json
 from flask import Flask, request
-from db import User, Book, Genre
+from db import db, User, Book, Genre
 
 app = Flask(__name__)
 
@@ -129,7 +129,7 @@ def create_book(user_id):
     return json.dumps(new_book.serialize()), 201
 
 # Route 10: Edit an existing book
-@app.route("/book/<int:book_id>/", methods=["POST"])
+@app.route("/book/<int:book_id>/edit/", methods=["POST"])
 def edit_book(book_id):
     body = json.loads(request.data)
     name = body.get("name")
@@ -139,11 +139,13 @@ def edit_book(book_id):
     photos = body.get("photos")
 
     book = Book.query.filter_by(id=book_id).first()
+    if book is None:
+        return json.dumps({"error": "Book not found"}), 404
 
-    if name: book.name = name
-    if description: book.description = description
-    if genre: book.genre = genre
-    if photos: book.photos = photos
+    if name is not None: book.name = name
+    if description is not None: book.description = description
+    if genre is not None: book.genre = genre
+    if photos is not None: book.photos = photos
 
     db.session.commit()
 
@@ -151,7 +153,7 @@ def edit_book(book_id):
 
 # Route 11: Like (bookmark) a book
 @app.route("/book/<int:user_id>/<int:book_id>/like/", methods=["POST"])
-def like_book(book_id):
+def like_book(user_id, book_id):
     user = User.query.filter_by(id=user_id).first()
     book = Book.query.filter_by(id=book_id).first()
 
@@ -164,10 +166,28 @@ def like_book(book_id):
         return json.dumps({"message": "Book already liked"}), 200
 
     user.bookmarked_books.append(book)
+    book.bookmarked_by_users.append(user)
     db.session.commit()
 
     return json.dumps({"message": "Book liked successfully"}), 200
 
+# Route 12: Create genre
+@app.route("/genre/", methods=["POST"])
+def create_genre():
+    body = json.loads(request.data)
+    genre = body.get("genre")
+
+    if genre is None:
+        return json.dumps({"error": "Genre is empty."}), 400
+
+    new_genre = Genre(
+        genre = genre
+    )
+
+    db.session.add(new_genre)
+    db.session.commit()
+
+    return json.dumps(new_genre.serialize()), 200
 
 if __name__ == "__main__":
     with app.app_context():
