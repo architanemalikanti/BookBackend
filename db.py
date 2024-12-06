@@ -83,7 +83,7 @@ class Book(db.Model):
         self.description = kwargs.get("description")
         self.genre = kwargs.get("genre")
         self.photos = kwargs.get("photos")
-        self.user_id = kwargs.get("user_id")
+        self.posted_by_user = kwargs.get("posted_by_user")
 
     def serialize(self):
         """
@@ -96,6 +96,7 @@ class Book(db.Model):
             "genre": self.genre.simple_serialize(),
             "photos": self.photos,
             "posted_by": self.posted_by_user.simple_serialize(),
+            "bookmarked_by": [user.simple_serialize() for user in self.bookmarked_by_user]
         }
 
     def simple_serialize(self):
