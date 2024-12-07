@@ -11,7 +11,14 @@ user_books_association = db.Table(
     "user_books_association",
     db.Model.metadata,
     db.Column("user_id", db.Integer, db.ForeignKey("users.id")),
-    db.Column("book_id", db.Integer, db.ForeignKey("books.id")),
+    db.Column("book_id", db.Integer, db.ForeignKey("books.id"))
+)
+
+friendships = db.Table(
+    "friendships",
+    db.Model.metadata,
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('friend_id', db.Integer, db.ForeignKey('users.id'))
 )
 
 class User(db.Model):
@@ -24,7 +31,6 @@ class User(db.Model):
     password = db.Column(db.String, nullable=False)
     profile_photo = db.Column(db.String, nullable=True)
     location = db.Column(db.String, nullable=True)
-
 
     # User information
     email = db.Column(db.String, nullable=False, unique=True)
@@ -40,6 +46,14 @@ class User(db.Model):
     )
     posted_books = db.relationship("Book", back_populates="posted_by_user", cascade="delete")
 
+    friends = db.relationship(
+        "User", 
+        secondary=friendships,  
+        primaryjoin=(friendships.c.user_id == id),   # User's side of the relationship
+        secondaryjoin=(friendships.c.friend_id == id),  # Friend's side of the relationshipsecondary=friendships,
+        back_populates="friends"
+    )
+
     def __init__(self, **kwargs):
         """
         Initialize User object/entry
@@ -48,20 +62,9 @@ class User(db.Model):
         self.password = kwargs.get("password")
         self.profile_photo = kwargs.get("profile_photo")
         self.location = kwargs.get("location")
-        self._friends = []  # Initialize an empty list for friends
-
-    def friends(self):
-        """
-        Get the list of friends
-        """
-        return self._friends
-    
-    def add_friend(self, user):
-        """
-        Add a friend to the list
-        """
-        if user not in self._friends:
-            self._friends.append(user)
+        self.email = kwargs.get("email")
+        self.password_digest = bcrypt.hashpw(kwargs.get("password").encode("utf8"), bcrypt.gensalt(rounds=13))
+        self.renew_session()
 
     def serialize(self):
         """
@@ -72,6 +75,7 @@ class User(db.Model):
             "username": self.username,
             "profile_photo": self.profile_photo,
             "location": self.location,
+            "email": self.email,
             "bookmarked_books": [book.simple_serialize() for book in self.bookmarked_books],
             "posted_books": [book.simple_serialize() for book in self.posted_books],
             "friends": [friend.simple_serialize() for friend in self.friends]  # Serialize friends
@@ -85,14 +89,9 @@ class User(db.Model):
             "id": self.id,
             "username": self.username,
             "profile_photo": self.profile_photo,
+            "location": self.location,
+            "email": self.email
         }
-    def __init__(self, **kwargs):
-        """
-        Initializes a User object
-        """
-        self.email = kwargs.get("email")
-        self.password_digest = bcrypt.hashpw(kwargs.get("password").encode("utf8"), bcrypt.gensalt(rounds=13))
-        self.renew_session()
 
     def _urlsafe_base_64(self):
         """
@@ -130,18 +129,25 @@ class User(db.Model):
         return update_token == self.update_token
 
 
-
 class Book(db.Model):
     """
     Book Model
     """
     __tablename__ = "books"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String, nullable=False)
+    title = db.Column(db.String, nullable=False)
+    author = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=True)
+
+    image = db.Column(db.String, nullable=True)
+    quote = db.Column(db.String, nullable=True)
+
+    genre_id = db.Column(db.Integer, db.ForeignKey("genres.id"))  # Foreign key for genre
     genre = db.relationship("Genre", back_populates="books")
-    photos = db.Column(db.String, nullable=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)  # Foreign key for the user who posted
     posted_by_user = db.relationship("User", back_populates="posted_books")
+
     bookmarked_by_users = db.relationship(
         "User", secondary=user_books_association, back_populates="bookmarked_books"
     )
@@ -150,15 +156,13 @@ class Book(db.Model):
         """
         Initialize Book object/entry
         """
-        self.name = kwargs.get("name")
+        self.title = kwargs.get("title")
+        self.author = kwargs.get("author")
         self.description = kwargs.get("description")
+        self.image = kwargs.get("image")
+        self.quote = kwargs.get("quote")
         self.genre = kwargs.get("genre")
-        self.photos = kwargs.get("photos")
-        self.user_id = kwargs.get("user_id")
- 
-
-
-
+        self.posted_by_user = kwargs.get("posted_by_user")
 
     def serialize(self):
         """
@@ -166,10 +170,12 @@ class Book(db.Model):
         """
         return {
             "id": self.id,
-            "name": self.name,
+            "title": self.title,
+            "author": self.author,
             "description": self.description,
+            "image": self.image,
+            "quote": self.quote,
             "genre": self.genre.simple_serialize(),
-            "photos": self.photos,
             "posted_by": self.posted_by_user.simple_serialize(),
         }
 
@@ -179,14 +185,17 @@ class Book(db.Model):
         """
         return {
             "id": self.id,
-            "name": self.name,
+            "title": self.title,
+            "author": self.author,
             "description": self.description,
-            "photos": self.photos
+            "image": self.image,
+            "quote": self.quote,
         }
+
 
 class Genre(db.Model):
     __tablename__ = "genres"
-    #id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     genre = db.Column(db.String, nullable=False, unique=True)
     books = db.relationship("Book", back_populates="genre", cascade="delete")
 
