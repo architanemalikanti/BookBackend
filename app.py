@@ -195,6 +195,39 @@ def create_genre():
 
     return json.dumps(new_genre.serialize()), 200
 
+#Route 13: Delete user
+@app.route("/user/<int:user_id>/", methods=["DELETE"])
+def delete_user(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return json.dumps({"error": "User not found."}), 404
+   
+    db.session.delete(user)
+    db.session.commit()
+    return json.dumps(user.serialize()), 200
+
+#Route 14: Delete book
+@app.route("/book/<int:book_id>/", methods=["DELETE"])
+def delete_book(book_id):
+    book = Book.query.filter_by(id=book_id).first()
+    if book is None:
+        return json.dumps({"error": "Book not found."}), 404
+   
+    db.session.delete(book)
+    db.session.commit()
+    return json.dumps(book.serialize()), 200
+
+#Route 15: Delete genre
+@app.route("/genre/<string:genre_name>/", methods=["DELETE"])
+def delete_genre(genre_name):
+    genre = Genre.query.filter_by(genre=genre_name).first()
+    if genre is None:
+        return json.dumps({"error": "Genre not found."}), 404
+   
+    db.session.delete(genre)
+    db.session.commit()
+    return json.dumps(genre.serialize()), 200
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()  # Create tables if they don't exist
