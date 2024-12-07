@@ -6,7 +6,7 @@ import users_dao
 
 
 app = Flask(__name__)
-db_filename = "book.db"
+db_filename = "/usr/app/book.db"
 
 # Database configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///books.db"  # Update with your database URI
