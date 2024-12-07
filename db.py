@@ -139,8 +139,13 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=True)
+
+    genre_id = db.Column(db.Integer, db.ForeignKey('genres.id'), nullable=False)
     genre = db.relationship("Genre", back_populates="books")
+
     photos = db.Column(db.String, nullable=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  
     posted_by_user = db.relationship("User", back_populates="posted_books")
     bookmarked_by_users = db.relationship(
         "User", secondary=user_books_association, back_populates="bookmarked_books"
@@ -154,7 +159,7 @@ class Book(db.Model):
         self.description = kwargs.get("description")
         self.genre = kwargs.get("genre")
         self.photos = kwargs.get("photos")
-        self.user_id = kwargs.get("user_id")
+        self.posted_by_user = kwargs.get("posted_by_user")
  
 
 
@@ -171,6 +176,7 @@ class Book(db.Model):
             "genre": self.genre.simple_serialize(),
             "photos": self.photos,
             "posted_by": self.posted_by_user.simple_serialize(),
+            "bookmarked_by": [user.simple_serialize() for user in self.bookmarked_by_users]
         }
 
     def simple_serialize(self):
@@ -186,9 +192,12 @@ class Book(db.Model):
 
 class Genre(db.Model):
     __tablename__ = "genres"
-    #id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    genre = db.Column(db.String, nullable=False, unique=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    genre = db.Column(db.String, nullable = False, unique=True)
     books = db.relationship("Book", back_populates="genre", cascade="delete")
+
+    def __init__(self, **kwargs):
+        self.genre = kwargs.get("genre")
 
     def serialize(self):
         return {
